@@ -1,0 +1,636 @@
+﻿<!DOCTYPE html>
+<html class="dark" lang="tr">
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Bilet Avcısı Pro v5.0 | Bilet Bulucu</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" type="text/css" href="https://npmcdn.com/flatpickr/dist/themes/dark.css">
+
+    <style>
+        :root {
+            --primary: #6366f1;
+            --secondary: #ec4899;
+            --accent: #10b981;
+            --bg-deep: #020617;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: radial-gradient(circle at top right, #1e1b4b, #020617 60%);
+            background-attachment: fixed;
+        }
+
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .text-gradient-silver {
+            background: linear-gradient(to bottom, #ffffff 0%, #cbd5e1 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .neon-glow-primary {
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
+        }
+
+        .neon-glow-error {
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.2);
+        }
+
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+
+        .tab-one-way:checked ~ .form-container .return-date-field {
+            display: none;
+        }
+
+        .tab-one-way:checked ~ .form-container .wagon-section-one-way {
+            display: block;
+        }
+
+        .tab-one-way:checked ~ .form-container .wagon-sections-round-trip {
+            display: none;
+        }
+
+        .tab-round-trip:checked ~ .form-container .return-date-field {
+            display: block;
+        }
+
+        .tab-round-trip:checked ~ .form-container .wagon-section-one-way {
+            display: none;
+        }
+
+        .tab-round-trip:checked ~ .form-container .wagon-sections-round-trip {
+            display: block;
+        }
+
+        input::-webkit-calendar-picker-indicator {
+            opacity: 0;
+        }
+
+        .invalid-field {
+            animation: shake 0.4s ease-in-out;
+            box-shadow: 0 0 15px rgba(239, 68, 68, 0.4) !important;
+            border: 1px solid rgba(239, 68, 68, 0.6) !important;
+        }
+
+        @keyframes shake {
+            0%, 100% {
+                transform: translateX(0);
+            }
+
+            25% {
+                transform: translateX(-5px);
+            }
+
+            75% {
+                transform: translateX(5px);
+            }
+        }
+
+        .tooltip-error {
+            position: absolute;
+            bottom: calc(100% + 10px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: #ef4444;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 700;
+            white-space: nowrap;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 50;
+        }
+
+        .invalid-field + .tooltip-error {
+            opacity: 1;
+        }
+
+        .wagon-card input:checked + .card-content {
+            border-color: #6366f1;
+            background-color: rgba(99, 102, 241, 0.1);
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.2);
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(99, 102, 241, 0.2);
+            border-radius: 10px;
+        }
+
+        .trt-clock {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+        }
+    </style>
+</head>
+<body class="text-slate-200 min-h-screen selection:bg-indigo-500/30 flex flex-col items-center justify-center py-12 px-6">
+    <audio id="siber-alarm" src="/static/alarm.mp3" preload="auto"></audio>
+
+    <main class="max-w-4xl w-full space-y-8">
+        <section class="space-y-8">
+            <div class="glass-panel p-8 lg:p-12 rounded-3xl relative overflow-hidden">
+                <div class="absolute -top-24 -right-24 w-80 h-80 bg-indigo-600/20 blur-[120px] rounded-full pointer-events-none"></div>
+                <div class="absolute -bottom-24 -left-24 w-80 h-80 bg-pink-600/20 blur-[120px] rounded-full pointer-events-none"></div>
+                <div class="relative z-10">
+                    <input checked="" class="tab-one-way hidden" id="one-way" name="trip-type" type="radio" />
+                    <input class="tab-round-trip hidden" id="round-trip" name="trip-type" type="radio" />
+
+                    <div class="absolute top-0 right-0 mt-4 mr-4 trt-clock flex items-center gap-2 px-4 py-2 rounded-xl">
+                        <span class="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span class="text-[12px] font-mono font-bold text-slate-300 tracking-wider" id="live-clock">00:00:00 TRT</span>
+                    </div>
+
+                    <div class="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
+                        <div>
+                            <h1 class="text-5xl lg:text-6xl font-black tracking-tighter mb-3 text-gradient-silver">Bilet Bulucu</h1>
+                            <p class="text-slate-400 font-medium max-w-md">Biletlerinizi yapay zeka destekli botumuzla saniyeler içinde yakalayın.</p>
+                        </div>
+                        <div class="flex p-1.5 bg-slate-900/50 rounded-2xl w-fit border border-white/5">
+                            <label class="cursor-pointer px-6 py-2.5 rounded-xl text-sm font-bold transition-all inline-block" for="one-way">Sadece Gidiş</label>
+                            <label class="cursor-pointer px-6 py-2.5 rounded-xl text-sm font-medium hover:text-white transition-colors inline-block" for="round-trip">Gidiş - Dönüş</label>
+                        </div>
+                    </div>
+                    <style>
+                        #one-way:checked ~ div div label[for="one-way"] {
+                            background: #6366f1;
+                            color: white;
+                            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+                        }
+
+                        #one-way:checked ~ div div label[for="round-trip"] {
+                            color: #94a3b8;
+                        }
+
+                        #round-trip:checked ~ div div label[for="round-trip"] {
+                            background: #6366f1;
+                            color: white;
+                            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+                        }
+
+                        #round-trip:checked ~ div div label[for="one-way"] {
+                            color: #94a3b8;
+                        }
+                    </style>
+
+                    <form class="form-container space-y-10" id="ticket-form" novalidate="">
+
+                        <div class="space-y-3 relative">
+                            <label class="block text-xs font-bold uppercase tracking-widest text-indigo-400/80 ml-1">Bildirim Maili</label>
+                            <div class="relative group input-wrapper">
+                                <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-indigo-400 transition-colors">mail</span>
+                                <input class="w-full bg-slate-900/60 border border-white/5 rounded-2xl py-4.5 pl-12 pr-4 text-white placeholder:text-slate-600 focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500/50 outline-none transition-all" id="input-email" placeholder="example@mail.com" required="" type="email" />
+                                <div class="tooltip-error">Lütfen geçerli bir mail giriniz</div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="space-y-3 relative">
+                                <label class="block text-xs font-bold uppercase tracking-widest text-indigo-400/80 ml-1">Nereden?</label>
+                                <div class="relative group input-wrapper">
+                                    <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-indigo-400">location_on</span>
+                                    <input class="w-full bg-slate-900/60 border border-white/5 rounded-2xl py-4 pl-12 pr-4 text-white placeholder:text-slate-600 focus:ring-2 focus:ring-indigo-500/30 outline-none transition-all" id="input-from" list="istasyonlar" placeholder="Örn: Ankara Gar" required="" type="text" />
+                                    <div class="tooltip-error">Lütfen kalkış noktasını belirtin</div>
+                                </div>
+                            </div>
+                            <div class="space-y-3 relative">
+                                <label class="block text-xs font-bold uppercase tracking-widest text-indigo-400/80 ml-1">Nereye?</label>
+                                <div class="relative group input-wrapper">
+                                    <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-indigo-400">near_me</span>
+                                    <input class="w-full bg-slate-900/60 border border-white/5 rounded-2xl py-4 pl-12 pr-4 text-white placeholder:text-slate-600 focus:ring-2 focus:ring-indigo-500/30 outline-none transition-all" id="input-to" list="istasyonlar" placeholder="Örn: Sivas" required="" type="text" />
+                                    <div class="tooltip-error">Lütfen varış noktasını belirtin</div>
+                                </div>
+                            </div>
+
+                            <datalist id="istasyonlar">
+                                <option value="ANKARA GAR"></option>
+                                <option value="ERYAMAN YHT"></option>
+                                <option value="SİNCAN"></option>
+                                <option value="POLATLI YHT"></option>
+                                <option value="POLATLI"></option>
+                                <option value="KAYAŞ"></option>
+                                <option value="ELMADAĞ"></option>
+                                <option value="TEMELLİ"></option>
+                                <option value="LALAHAN"></option>
+                                <option value="ŞEFFAATLİ"></option>
+
+                                <option value="İSTANBUL(SÖĞÜTLÜÇEŞME)"></option>
+                                <option value="İSTANBUL(HALKALI)"></option>
+                                <option value="İSTANBUL(PENDİK)"></option>
+                                <option value="İSTANBUL(BAKIRKÖY)"></option>
+                                <option value="İSTANBUL(BOSTANCI)"></option>
+                                <option value="GEBZE"></option>
+                                <option value="İZMİT(YHT)"></option>
+                                <option value="İZMİT"></option>
+                                <option value="ARİFİYE"></option>
+                                <option value="SAKARYA"></option>
+                                <option value="SAPANCA"></option>
+                                <option value="BÜYÜKDERBENT"></option>
+                                <option value="BİLECİK YHT"></option>
+                                <option value="BİLECİK"></option>
+                                <option value="BOZÜYÜK YHT"></option>
+                                <option value="BOZÜYÜK"></option>
+                                <option value="OSMANELİ"></option>
+                                <option value="PAMUKOVA"></option>
+
+                                <option value="İZMİR (BASMANE)"></option>
+                                <option value="ALSANCAK"></option>
+                                <option value="ÇİĞLİ"></option>
+                                <option value="MENEMEN"></option>
+                                <option value="ALİAĞA"></option>
+                                <option value="CUMAOVASI"></option>
+                                <option value="TEPEKÖY"></option>
+                                <option value="SELÇUK"></option>
+                                <option value="ADNAN MENDERES HAVALİMANI"></option>
+                                <option value="TORBALI"></option>
+                                <option value="ÖDEMİŞ"></option>
+                                <option value="TİRE"></option>
+                                <option value="AYDIN"></option>
+                                <option value="NAZİLLİ"></option>
+                                <option value="SÖKE"></option>
+                                <option value="ORTAKLAR"></option>
+                                <option value="İNCİRLİOVA"></option>
+                                <option value="GERMENCİK"></option>
+                                <option value="DENİZLİ"></option>
+                                <option value="SARAYKÖY"></option>
+                                <option value="GONCALI"></option>
+                                <option value="MANİSA"></option>
+                                <option value="TURGUTLU"></option>
+                                <option value="SALİHLİ"></option>
+                                <option value="ALAŞEHİR"></option>
+                                <option value="AKHİSAR"></option>
+                                <option value="SOMA"></option>
+                                <option value="KIRKAĞAÇ"></option>
+                                <option value="UŞAK"></option>
+                                <option value="AFYONKARAHİSAR"></option>
+                                <option value="AFYON A.ÇETİNKAYA"></option>
+                                <option value="KÜTAHYA"></option>
+                                <option value="TAVŞANLI"></option>
+
+                                <option value="SİVAS"></option>
+                                <option value="YILDIZELİ YHT , SİVAS"></option>
+                                <option value="YILDIZELİ , SİVAS"></option>
+                                <option value="YENİÇUBUK , SİVAS"></option>
+                                <option value="YENİKANGAL , SİVAS"></option>
+                                <option value="KANGAL , SİVAS"></option>
+                                <option value="AŞAĞI GÜNEŞ , SİVAS"></option>
+                                <option value="YENİ KARASAR , SİVAS"></option>
+                                <option value="DİVRİĞİ"></option>
+                                <option value="ŞARKKIŞLA , SİVAS"></option>
+                                <option value="ÇETİNKAYA"></option>
+
+                                <option value="ESKİŞEHİR"></option>
+                                <option value="ENVERİYE"></option>
+                                <option value="ALPU"></option>
+                                <option value="BEYLİKOVA"></option>
+                                <option value="KONYA"></option>
+                                <option value="SELÇUKLU YHT"></option>
+                                <option value="KARAMAN"></option>
+                                <option value="AKŞEHİR"></option>
+                                <option value="ILGIN"></option>
+                                <option value="KADINHANI"></option>
+                                <option value="ÇUMRA"></option>
+                                <option value="KAYSERİ"></option>
+                                <option value="BOĞAZKÖPRÜ"></option>
+                                <option value="İNCESU"></option>
+                                <option value="NİĞDE"></option>
+                                <option value="ULUKIŞLA"></option>
+                                <option value="YOZGAT YHT"></option>
+                                <option value="YERKÖY YHT"></option>
+                                <option value="SORGUN YHT"></option>
+                                <option value="AKDAĞMADENİ YHT"></option>
+                                <option value="KIRIKKALE YHT"></option>
+                                <option value="KIRIKKALE"></option>
+                                <option value="YAHŞİHAN"></option>
+
+                                <option value="ADANA"></option>
+                                <option value="ŞAKİRPAŞA"></option>
+                                <option value="İNCİRLİK"></option>
+                                <option value="CEYHAN"></option>
+                                <option value="MERSİN"></option>
+                                <option value="TARSUS"></option>
+                                <option value="YENİCE"></option>
+                                <option value="OSMANİYE"></option>
+                                <option value="İSKENDERUN"></option>
+                                <option value="GAZİANTEP"></option>
+                                <option value="NİZİP"></option>
+                                <option value="MALATYA"></option>
+                                <option value="BATTALGAZİ"></option>
+                                <option value="ELAZIĞ"></option>
+                                <option value="YOLÇATI"></option>
+                                <option value="DİYARBAKIR"></option>
+                                <option value="BİSMİL"></option>
+                                <option value="BATMAN"></option>
+                                <option value="TATVAN"></option>
+
+                                <option value="ERZİNCAN"></option>
+                                <option value="İLİÇ"></option>
+                                <option value="KEMAH"></option>
+                                <option value="ERZURUM"></option>
+                                <option value="ILICA"></option>
+                                <option value="HASANKALE"></option>
+                                <option value="AŞKALE"></option>
+                                <option value="HORASAN"></option>
+                                <option value="KARS"></option>
+                                <option value="SARIKAMIŞ"></option>
+                                <option value="SELİM"></option>
+
+                                <option value="SAMSUN"></option>
+                                <option value="HAVZA"></option>
+                                <option value="KAVAK"></option>
+                                <option value="AMASYA"></option>
+                                <option value="SULUOVA"></option>
+                                <option value="TOKAT"></option>
+                                <option value="TURHAL"></option>
+                                <option value="ZİLE"></option>
+                                <option value="ARTOVA"></option>
+                                <option value="ZONGULDAK"></option>
+                                <option value="ÇAYCUMA"></option>
+                                <option value="KARABÜK"></option>
+                                <option value="EDİRNE"></option>
+                                <option value="KAPIKULE"></option>
+                                <option value="ÇERKEZKÖY"></option>
+                                <option value="ÇORLU"></option>
+                                <option value="TEKİRDAĞ"></option>
+                                <option value="MURATLI"></option>
+
+                                <option value="BALIKESİR"></option>
+                                <option value="BANDIRMA"></option>
+                                <option value="SUSURLUK"></option>
+                                <option value="SINDIRGI"></option>
+                                <option value="DURSUNBEY"></option>
+                            </datalist>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="space-y-3 relative">
+                                <label class="block text-xs font-bold uppercase tracking-widest text-indigo-400/80 ml-1">Gidiş Tarihi</label>
+                                <div class="relative group input-wrapper">
+                                    <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-indigo-400">calendar_today</span>
+                                    <input class="w-full bg-slate-900/60 border border-white/5 rounded-2xl py-4 pl-12 pr-4 text-white placeholder:text-slate-600 focus:ring-2 focus:ring-indigo-500/30 outline-none transition-all" id="input-departure" placeholder="Tarih Seçiniz..." required="" type="text" />
+                                    <div class="tooltip-error">Lütfen bir tarih seçin</div>
+                                </div>
+                            </div>
+
+                            <div class="return-date-field space-y-3 hidden relative">
+                                <label class="block text-xs font-bold uppercase tracking-widest text-indigo-400/80 ml-1">Dönüş Tarihi</label>
+                                <div class="relative group input-wrapper">
+                                    <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-500">calendar_today</span>
+                                    <input class="w-full bg-slate-900/60 border border-white/5 rounded-2xl py-4 pl-12 pr-4 text-white placeholder:text-slate-600 focus:ring-2 focus:ring-indigo-500/30 outline-none transition-all" id="input-return" placeholder="Tarih Seçiniz..." type="text" />
+                                    <div class="tooltip-error">Dönüş tarihini seçiniz</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-indigo-500/5 rounded-3xl p-6 border border-indigo-500/20 flex items-center gap-5">
+                            <div class="bg-indigo-500/20 p-3 rounded-2xl"><span class="material-symbols-outlined text-indigo-400">info</span></div>
+                            <p class="text-sm font-medium text-slate-400">Seçilen tarihte en uygun seferler arka planda 7/24 taranacaktır. Sistem boş koltuk yakaladığında e-posta üzerinden anında bildirim alacaksınız.</p>
+                        </div>
+
+                        <div class="space-y-10">
+                            <div class="wagon-section-one-way space-y-6">
+                                <h3 class="font-bold text-xl text-white flex items-center gap-3"><span class="w-2 h-7 bg-emerald-500 rounded-full"></span> Vagon Tipi</h3>
+                                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 relative wagon-group" id="wagon-group-single">
+                                    <label class="wagon-card cursor-pointer"><input class="hidden" name="wagon-single" type="radio" value="economy" checked /><div class="card-content bg-slate-900/40 p-6 rounded-2xl border border-white/5 hover:border-white/20 transition-all text-center flex flex-col items-center justify-center"><span class="material-symbols-outlined text-slate-500 text-3xl mb-3">airline_seat_recline_extra</span><p class="text-[11px] font-black uppercase tracking-widest text-slate-400">Ekonomi</p></div></label>
+                                    <label class="wagon-card cursor-pointer"><input class="hidden" name="wagon-single" type="radio" value="business" /><div class="card-content bg-slate-900/40 p-6 rounded-2xl border border-white/5 hover:border-white/20 transition-all text-center flex flex-col items-center justify-center"><span class="material-symbols-outlined text-slate-500 text-3xl mb-3">workspace_premium</span><p class="text-[11px] font-black uppercase tracking-widest text-slate-400">Business</p></div></label>
+                                    <label class="wagon-card cursor-pointer"><input class="hidden" name="wagon-single" type="radio" value="loca" /><div class="card-content bg-slate-900/40 p-6 rounded-2xl border border-white/5 hover:border-white/20 transition-all text-center flex flex-col items-center justify-center"><span class="material-symbols-outlined text-slate-500 text-3xl mb-3">door_sliding</span><p class="text-[11px] font-black uppercase tracking-widest text-slate-400">Loca</p></div></label>
+                                    <label class="wagon-card cursor-pointer"><input class="hidden" name="wagon-single" type="radio" value="wheelchair" /><div class="card-content bg-slate-900/40 p-6 rounded-2xl border border-white/5 hover:border-white/20 transition-all text-center flex flex-col items-center justify-center"><span class="material-symbols-outlined text-slate-500 text-3xl mb-3">accessible</span><p class="text-[11px] font-black uppercase tracking-widest text-slate-400">Tekerlekli</p></div></label>
+                                </div>
+                            </div>
+
+                            <div class="wagon-sections-round-trip space-y-10 hidden">
+                                <div class="space-y-6">
+                                    <h3 class="font-bold text-xl text-white flex items-center gap-3"><span class="w-2 h-7 bg-indigo-500 rounded-full"></span> Gidiş Vagonu</h3>
+                                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 relative wagon-group" id="wagon-group-departure">
+                                        <label class="wagon-card cursor-pointer"><input class="hidden" name="wagon-departure" type="radio" value="economy" checked /><div class="card-content bg-slate-900/40 p-6 rounded-2xl border border-white/5 text-center flex flex-col items-center justify-center"><span class="material-symbols-outlined text-slate-500 text-3xl mb-3">airline_seat_recline_extra</span><p class="text-[11px] font-black uppercase tracking-widest text-slate-400">Ekonomi</p></div></label>
+                                        <label class="wagon-card cursor-pointer"><input class="hidden" name="wagon-departure" type="radio" value="business" /><div class="card-content bg-slate-900/40 p-6 rounded-2xl border border-white/5 text-center flex flex-col items-center justify-center"><span class="material-symbols-outlined text-slate-500 text-3xl mb-3">workspace_premium</span><p class="text-[11px] font-black uppercase tracking-widest text-slate-400">Business</p></div></label>
+                                        <label class="wagon-card cursor-pointer"><input class="hidden" name="wagon-departure" type="radio" value="loca" /><div class="card-content bg-slate-900/40 p-6 rounded-2xl border border-white/5 text-center flex flex-col items-center justify-center"><span class="material-symbols-outlined text-slate-500 text-3xl mb-3">door_sliding</span><p class="text-[11px] font-black uppercase tracking-widest text-slate-400">Loca</p></div></label>
+                                        <label class="wagon-card cursor-pointer"><input class="hidden" name="wagon-departure" type="radio" value="wheelchair" /><div class="card-content bg-slate-900/40 p-6 rounded-2xl border border-white/5 text-center flex flex-col items-center justify-center"><span class="material-symbols-outlined text-slate-500 text-3xl mb-3">accessible</span><p class="text-[11px] font-black uppercase tracking-widest text-slate-400">Tekerlekli</p></div></label>
+                                    </div>
+                                </div>
+                                <div class="space-y-6">
+                                    <h3 class="font-bold text-xl text-white flex items-center gap-3"><span class="w-2 h-7 bg-pink-500 rounded-full"></span> Dönüş Vagonu</h3>
+                                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 relative wagon-group" id="wagon-group-return">
+                                        <label class="wagon-card cursor-pointer"><input class="hidden" name="wagon-return" type="radio" value="economy" checked /><div class="card-content bg-slate-900/40 p-6 rounded-2xl border border-white/5 text-center flex flex-col items-center justify-center"><span class="material-symbols-outlined text-slate-500 text-3xl mb-3">airline_seat_recline_extra</span><p class="text-[11px] font-black uppercase tracking-widest text-slate-400">Ekonomi</p></div></label>
+                                        <label class="wagon-card cursor-pointer"><input class="hidden" name="wagon-return" type="radio" value="business" /><div class="card-content bg-slate-900/40 p-6 rounded-2xl border border-white/5 text-center flex flex-col items-center justify-center"><span class="material-symbols-outlined text-slate-500 text-3xl mb-3">workspace_premium</span><p class="text-[11px] font-black uppercase tracking-widest text-slate-400">Business</p></div></label>
+                                        <label class="wagon-card cursor-pointer"><input class="hidden" name="wagon-return" type="radio" value="loca" /><div class="card-content bg-slate-900/40 p-6 rounded-2xl border border-white/5 text-center flex flex-col items-center justify-center"><span class="material-symbols-outlined text-slate-500 text-3xl mb-3">door_sliding</span><p class="text-[11px] font-black uppercase tracking-widest text-slate-400">Loca</p></div></label>
+                                        <label class="wagon-card cursor-pointer"><input class="hidden" name="wagon-return" type="radio" value="wheelchair" /><div class="card-content bg-slate-900/40 p-6 rounded-2xl border border-white/5 text-center flex flex-col items-center justify-center"><span class="material-symbols-outlined text-slate-500 text-3xl mb-3">accessible</span><p class="text-[11px] font-black uppercase tracking-widest text-slate-400">Tekerlekli</p></div></label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-col md:flex-row gap-5 pt-10">
+                            <button class="flex-1 neon-glow-primary bg-indigo-600 hover:bg-indigo-500 text-white py-5 rounded-2xl font-black text-lg tracking-tight hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3" onclick="validateForm()" type="button">
+                                🚀 Nöbeti Başlat
+                            </button>
+                            <button id="btnDurdur" class="px-12 py-5 rounded-2xl border-2 border-red-500/30 text-red-500 font-bold text-lg hover:bg-red-500/10 active:scale-95 transition-all neon-glow-error flex items-center justify-center gap-2" type="button">
+                                <span class="material-symbols-outlined">stop_circle</span> Sistemi Durdur
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="space-y-4">
+                <div class="flex items-center justify-between px-3">
+                    <div class="flex items-center gap-3">
+                        <div class="relative flex h-3 w-3"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span><span class="relative inline-flex rounded-full h-3 w-3 bg-indigo-500"></span></div>
+                        <h2 class="font-bold text-xl text-slate-200">Canlı İşlem Akışı</h2>
+                    </div>
+                    <span id="botStatusBadge" class="bg-indigo-500/10 text-indigo-400 px-4 py-1.5 rounded-full text-[10px] font-black tracking-widest border border-indigo-500/20 uppercase">
+                        Sistem Hazır
+                    </span>
+                </div>
+                <div class="glass-panel rounded-3xl h-80 p-8 overflow-hidden relative border-white/5">
+                    <div class="h-full overflow-y-auto space-y-4 custom-scrollbar pr-2 relative z-10 flex flex-col items-center justify-center text-center" id="activity-log">
+                        <div class="space-y-3 opacity-40">
+                            <span class="material-symbols-outlined text-4xl text-slate-500">terminal</span>
+                            <p class="text-sm font-medium text-slate-400">Nöbet başladığında işlemler burada listelenecektir...</p>
+                        </div>
+                    </div>
+                    <div class="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-slate-950 to-transparent pointer-events-none z-20 opacity-50"></div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/tr.js"></script>
+
+    <script>
+        // Saat Güncelleyici
+        function updateClock() {
+            const now = new Date();
+            const options = { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'Europe/Istanbul' };
+            document.getElementById('live-clock').textContent = now.toLocaleTimeString('tr-TR', options) + ' TRT';
+        }
+        setInterval(updateClock, 1000); updateClock();
+
+        flatpickr("#input-departure", { locale: "tr", dateFormat: "d.m.Y", minDate: "today" });
+        flatpickr("#input-return", { locale: "tr", dateFormat: "d.m.Y", minDate: "today" });
+
+        function addLogEntry(type, title, message) {
+            const log = document.getElementById('activity-log');
+            const entry = document.createElement('div');
+            entry.className = 'bg-slate-900/40 p-4 rounded-xl border border-white/5 animate-in fade-in slide-in-from-bottom-2 duration-300 w-full text-left';
+
+            let badgeColor = "text-indigo-400 bg-indigo-400/10";
+            if (type === "HATA" || type === "UYARI") badgeColor = "text-red-400 bg-red-400/10";
+            if (type === "BAŞARILI" || type === "FIRSAT" || type === "BİLDİRİM") badgeColor = "text-emerald-400 bg-emerald-400/10";
+
+            entry.innerHTML = `
+                                    <div class="flex items-center gap-3 mb-1">
+                                        <span class="text-[10px] font-black uppercase ${badgeColor} px-2 py-0.5 rounded">${type}</span>
+                                        <h4 class="text-sm font-bold text-slate-100">${title}</h4>
+                                    </div>
+                                    <p class="text-xs text-slate-400 leading-relaxed">${message}</p>
+                                `;
+            log.prepend(entry);
+        }
+
+        async function validateForm() {
+            const isRoundTrip = document.getElementById('round-trip').checked;
+            const requiredInputs = [
+                document.getElementById('input-email'),
+                document.getElementById('input-from'),
+                document.getElementById('input-to'),
+                document.getElementById('input-departure')
+            ];
+            if (isRoundTrip) requiredInputs.push(document.getElementById('input-return'));
+
+            let firstInvalid = null;
+            document.querySelectorAll('.invalid-field').forEach(el => el.classList.remove('invalid-field'));
+
+            requiredInputs.forEach(input => {
+                if (!input.value || (input.type === 'email' && !input.checkValidity())) {
+                    const wrapper = input.closest('.input-wrapper');
+                    wrapper.classList.add('invalid-field');
+                    if (!firstInvalid) firstInvalid = wrapper;
+                }
+            });
+
+            if (firstInvalid) {
+                firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                setTimeout(() => { document.querySelectorAll('.invalid-field').forEach(el => el.classList.remove('invalid-field')); }, 4000);
+                return;
+            }
+
+            const logPanel = document.getElementById('activity-log');
+            if (logPanel.innerHTML.includes('terminal')) {
+                logPanel.innerHTML = '';
+                logPanel.classList.remove('justify-center', 'items-center', 'text-center');
+                logPanel.classList.add('justify-start');
+            }
+
+            const wagonMap = { 'economy': 'EKONOMİ', 'business': 'BUSİNESS', 'loca': 'LOCA', 'wheelchair': 'TEKERLEKLİ SANDALYE' };
+            let v_gidis = ''; let v_donus = '';
+
+            if (!isRoundTrip) {
+                v_gidis = wagonMap[document.querySelector('input[name="wagon-single"]:checked').value];
+                v_donus = v_gidis;
+            } else {
+                v_gidis = wagonMap[document.querySelector('input[name="wagon-departure"]:checked').value];
+                v_donus = wagonMap[document.querySelector('input[name="wagon-return"]:checked').value];
+            }
+
+            const payload = {
+                email: document.getElementById('input-email').value,
+                trip: isRoundTrip ? 'cift' : 'tek',
+                kalkis: document.getElementById('input-from').value.trim().toUpperCase(),
+                varis: document.getElementById('input-to').value.trim().toUpperCase(),
+                t_gidis: document.getElementById('input-departure').value,
+                t_donus: isRoundTrip ? document.getElementById('input-return').value : null,
+                yolcu: 1, // Python backend'in olası hatalarını engellemek için arka planda sabit 1 gönderilir
+                v_gidis: v_gidis,
+                v_donus: v_donus
+            };
+
+            document.querySelector('#botStatusBadge').textContent = 'MOTOR ÇALIŞIYOR';
+            document.querySelector('#botStatusBadge').className = 'bg-yellow-500/10 text-yellow-400 px-4 py-1.5 rounded-full text-[10px] font-black tracking-widest border border-yellow-500/20 uppercase animate-pulse';
+
+            addLogEntry('AĞ', 'Veri Transferi', 'Sunucuya komut gönderiliyor. 7/24 Nöbet Başlıyor...');
+
+            try {
+                const response = await fetch('/sorgula', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+                addLogEntry('SİSTEM', 'Motor Yanıtı', result.mesaj || result.durum);
+            } catch (err) {
+                addLogEntry('HATA', 'Sunucu Çöktü', 'Python (app.py) kapalı olabilir. Lütfen terminalden çalıştırın.');
+            }
+        }
+
+        document.getElementById('btnDurdur').addEventListener('click', async () => {
+            addLogEntry('SİSTEM', 'Acil Durdurma', 'Durdurma protokolü devrede...');
+            await fetch('/durdur', { method: 'POST' });
+            setTimeout(() => location.reload(), 2000);
+        });
+
+        // Logları Çeken ve Sesi Tetikleyen Döngü
+        let lastLogCount = 0;
+        setInterval(async () => {
+            try {
+                const res = await fetch('/get_logs');
+                const logs = await res.json();
+
+                if (logs && logs.length > lastLogCount) {
+                    const logPanel = document.getElementById('activity-log');
+                    if (logPanel.innerHTML.includes('terminal')) {
+                        logPanel.innerHTML = '';
+                        logPanel.classList.remove('justify-center', 'items-center', 'text-center');
+                        logPanel.classList.add('justify-start');
+                    }
+
+                    for (let i = lastLogCount; i < logs.length; i++) {
+                        let logStr = logs[i];
+                        let type = "BİLGİ"; let title = "Sistem İşlemi";
+
+                        if (logStr.includes("⚠️")) { type = "UYARI"; title = "Dikkat"; }
+                        else if (logStr.includes("✅")) { type = "BAŞARILI"; title = "Aşama Tamamlandı"; }
+                        else if (logStr.includes("🚨")) { type = "FIRSAT"; title = "BİLET BULUNDU!"; }
+                        else if (logStr.includes("🚀")) { type = "MOTOR"; title = "Bot Devrede"; }
+
+                        // MAİL LOGU GELDİĞİNDE SİBER ALARM ÇALAR
+                        else if (logStr.includes("📧")) {
+                            type = "BİLDİRİM";
+                            title = "MAİL GÖNDERİLDİ!";
+                            document.getElementById('siber-alarm').play().catch(e => console.log("Tarayıcı ses çalmayı engelledi:", e));
+                        }
+
+                        logStr = logStr.replace(/\[.*?\]\s*/, '');
+                        addLogEntry(type, title, logStr);
+                    }
+                    lastLogCount = logs.length;
+                }
+            } catch (e) { }
+        }, 3000);
+    </script>
+</body>
+</html>
