@@ -1,9 +1,19 @@
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+import winsound
+import time as _time
+
+def ses_cal():
+    """Bilet bulununca dikkat çekici uyarı sesi çalar."""
+    for _ in range(5):
+        winsound.Beep(1000, 400)  # 1000 Hz, 400ms
+        _time.sleep(0.1)
+        winsound.Beep(1500, 400)  # 1500 Hz, 400ms
+        _time.sleep(0.1)
 
 def mail_gonder(baslik, icerik_html, alici_email):
-    gonderici_email = "safakkuru21@gmail.com" 
+    gonderici_email = "a@gmail.com" 
     sifre = "oiciuxhsskwqbrwf" 
 
     msg = MIMEMultipart()

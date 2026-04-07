@@ -4,7 +4,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.action_chains import ActionChains
 from base_page import BasePage
-from bildirim_sistemi import mail_gonder
+from bildirim_sistemi import mail_gonder, ses_cal
 import time
 import traceback
 
@@ -21,12 +21,13 @@ class AramaSayfasi(BasePage):
     YOLCU_KUTUSU = (By.XPATH, "//input[@selenium-test='passenger']")
     YOLCU_UYGULA_BUTONU = (By.XPATH, "//button[@selenium-test='passenger-btn']")
 
-    def bilet_sorgula(self, nereden, nereye, gidis_tarihi, donus_tarihi, yolcu, v_g, v_d, email, logger):
+    def bilet_sorgula(self, nereden, nereye, gidis_tarihi, donus_tarihi, yolcu, v_g, v_d, email, logger, saat_baslangic=None, saat_bitis=None):
         wait = WebDriverWait(self.driver, 15)
         actions = ActionChains(self.driver)
         
         # Bulunan biletler
         bulunan_biletler_raporu = {"GİDİŞ": [], "DÖNÜŞ": []}
+        bulundu = False
         
         try:
             logger("⚙️ İşlem Başlatıldı: TCDD BOTU ÇALIŞIYOR")
@@ -89,7 +90,7 @@ class AramaSayfasi(BasePage):
                 wait_long.until(EC.visibility_of_element_located((By.ID, "gidis0")))
                 time.sleep(2)
                 # gidiş bileti listele
-                bulunan_biletler_raporu["GİDİŞ"] = self.vagon_filtrele("GİDİŞ", v_g, logger)
+                bulunan_biletler_raporu["GİDİŞ"] = self.vagon_filtrele("GİDİŞ", v_g, logger, saat_baslangic, saat_bitis)
 
                 if donus_tarihi:
                     ilk_kart = self.driver.find_element(By.ID, "gidis0")
@@ -100,13 +101,13 @@ class AramaSayfasi(BasePage):
                     wait_long.until(EC.visibility_of_element_located((By.ID, "donus0")))
                     time.sleep(2)
                     # dönüş bileti liste
-                    bulunan_biletler_raporu["DÖNÜŞ"] = self.vagon_filtrele("DÖNÜŞ", v_d, logger)
+                    bulunan_biletler_raporu["DÖNÜŞ"] = self.vagon_filtrele("DÖNÜŞ", v_d, logger, saat_baslangic, saat_bitis)
 
             except Exception as e:
                 self._hata_okuyucu(e, logger)
 
             # rapor ve mail yazdırma
-            self._raporu_yazdir_ve_mail_at(bulunan_biletler_raporu, donus_tarihi, email, logger)
+            bulundu = self._raporu_yazdir_ve_mail_at(bulunan_biletler_raporu, donus_tarihi, email, logger)
 
         except Exception as genel_hata:
             logger(f"❌ SİSTEM ÇÖKTÜ: {str(genel_hata).splitlines()[0]}")
@@ -119,6 +120,7 @@ class AramaSayfasi(BasePage):
                 self.driver.quit()
             except:
                 pass
+        return bulundu
 
  
     
@@ -150,7 +152,7 @@ class AramaSayfasi(BasePage):
         except Exception as e:
             logger(f"⚠️ Yolcu menüsü takıldı, atlanıyor! Hata: {str(e).splitlines()[0]}")
 
-    def vagon_filtrele(self, tip, hedef_vagon, logger):
+    def vagon_filtrele(self, tip, hedef_vagon, logger, saat_baslangic=None, saat_bitis=None):
         bulunanlar = []
         def normalize(t): return t.upper().replace('İ', 'I').replace('Ü', 'U').replace('Ö', 'O').strip()
         target = normalize(hedef_vagon)
@@ -183,6 +185,9 @@ class AramaSayfasi(BasePage):
                         s = kart.find_elements(By.TAG_NAME, "time")[0].text.strip()
                         
                         if y != "0" and y != "":
+                            if saat_baslangic and saat_bitis:
+                                if not self._saat_araliginda_mi(s, saat_baslangic, saat_bitis):
+                                    break  # Saat aralığı dışında, bu seferi atla
                             bulunanlar.append(f"Saat: {s} | Vagon: {target} | Boş Koltuk: {y}")
                         break
 
@@ -247,9 +252,14 @@ class AramaSayfasi(BasePage):
         """
 
         # Eğer en az 1 bilet varsa HTML maili gönder
-        if bilet_bulundu_mu and email:
-            logger("📧 Bulunan biletler HTML formatında mail olarak iletiliyor...")
-            mail_gonder("🔥 ACİL FIRSAT! TCDD BOTU RAPORU", html_govde, email)
+        if bilet_bulundu_mu:
+            logger("🔔 BİLET BULUNDU! Ses uyarısı çalınıyor...")
+            ses_cal()
+            if email:
+                logger("📧 Bulunan biletler HTML formatında mail olarak iletiliyor...")
+                mail_gonder("🔥 ACİL FIRSAT! TCDD BOTU RAPORU", html_govde, email)
+
+        return bilet_bulundu_mu
 
     def _tarih_elementini_bul(self, hedef, logger):
         t_id = hedef.replace(".", " ") 
@@ -312,3 +322,14 @@ class AramaSayfasi(BasePage):
                 logger("❌ O güne ait sefer bulunamadı veya biletler henüz satışa açılmamış.")
         except:
             pass
+
+    def _saat_araliginda_mi(self, saat_str, baslangic, bitis):
+        """Verilen saat stringinin (HH:MM) belirtilen aralıkta olup olmadığını kontrol eder."""
+        try:
+            from datetime import datetime
+            saat = datetime.strptime(saat_str.strip(), "%H:%M").time()
+            bas  = datetime.strptime(baslangic.strip(), "%H:%M").time()
+            bit  = datetime.strptime(bitis.strip(), "%H:%M").time()
+            return bas <= saat <= bit
+        except:
+            return True  # Parse edilemeyen saati filtreden geçir
